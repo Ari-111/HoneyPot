@@ -44,18 +44,18 @@ class EngagementMetrics(BaseModel):
 
 class ExtractedIntelligence(BaseModel):
     """Extracted intelligence structure"""
-    bankAccounts: List[str] = []
-    upiIds: List[str] = []
-    phishingLinks: List[str] = []
-    phoneNumbers: List[str] = []
-    suspiciousKeywords: List[str] = []
+    bankAccounts: List[str] = Field(default_factory=list)
+    upiIds: List[str] = Field(default_factory=list)
+    phishingLinks: List[str] = Field(default_factory=list)
+    phoneNumbers: List[str] = Field(default_factory=list)
+    suspiciousKeywords: List[str] = Field(default_factory=list)
 
 
 class MessageResponse(BaseModel):
     """Response model for honeypot endpoint - Hackathon Compliant"""
     status: str
-    reply: str
-    scamDetected: bool = False
+    scamDetected: bool
+    reply: Optional[str] = None
     engagementMetrics: Optional[EngagementMetrics] = None
     extractedIntelligence: Optional[ExtractedIntelligence] = None
     agentNotes: Optional[str] = None

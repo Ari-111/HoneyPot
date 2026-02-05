@@ -57,6 +57,34 @@ async def honeypot_endpoint(
     
     session = active_sessions[session_id]
     
+    # Step 0: Sync State from Request (Stateless Architecture)
+    # Allows server to restart without losing context if client sends history
+    if request.conversationHistory:
+        mapped_history = []
+        start_time = time.time()
+        
+        for msg in request.conversationHistory:
+            role = "user" if msg.sender == "scammer" else "assistant"
+            mapped_history.append({
+                "role": role,
+                "content": msg.text,
+                "timestamp": msg.timestamp
+            })
+            
+            # Try to parse timestamp for duration calculation
+            try:
+                # Assuming ISO format like 2026-02-06T12:00:00Z
+                ts = datetime.strptime(msg.timestamp, "%Y-%m-%dT%H:%M:%S%z").timestamp()
+                if ts < start_time:
+                    start_time = ts
+            except:
+                pass # distinct timestamp handling
+        
+        # Override session history with request history
+        session["conversation_history"] = mapped_history
+        session["message_count"] = len(mapped_history)
+        session["engagement_start_time"] = start_time
+
     # Step 1: Detect scam intent
     scam_detection = scam_detector.detect_scam_intent(message_text)
     
@@ -133,8 +161,8 @@ async def honeypot_endpoint(
         # Return hackathon-compliant response
         return MessageResponse(
             status="success",
-            reply=agent_response,
             scamDetected=True,
+            reply=agent_response,
             engagementMetrics=engagement,
             extractedIntelligence=extracted_intel,
             agentNotes=agent_notes
@@ -144,8 +172,11 @@ async def honeypot_endpoint(
         # Not a scam - simple response without extra fields
         return MessageResponse(
             status="success",
-            reply="Thank you for your message.",
-            scamDetected=False
+            scamDetected=False,
+            reply="Thank you for your message. How can I help you?",
+            engagementMetrics=None,
+            extractedIntelligence=None,
+            agentNotes=None
         )
 
 
