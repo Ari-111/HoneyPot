@@ -33,6 +33,7 @@ active_sessions: Dict[str, Dict] = {}
 
 
 @router.post("/api/honeypot", response_model=MessageResponse)
+@router.post("/honeypot", response_model=MessageResponse) # Fallback for tester
 async def honeypot_endpoint(
     request: MessageRequest,
     x_api_key: str = Header(...)
