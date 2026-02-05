@@ -34,49 +34,46 @@ app.add_middleware(RateLimitMiddleware)
 app.include_router(router)
 
 
-@app.api_route("/", methods=["GET", "POST"])
-async def root(request: Request):
-    """
-    Root endpoint - Handles both GET (Status) and POST (Fallback for Guvi Tester)
-    """
-    if request.method == "POST":
-        try:
-            body = await request.json()
-            # Double check if this looks like the expected payload
-            if "sessionId" in body and "message" in body:
-                # Validate API key manually
-                x_api_key = request.headers.get("x-api-key")
-                if not x_api_key:
-                    x_api_key = request.headers.get("X-API-KEY")
-                
-                if x_api_key != settings.api_key:
-                    raise HTTPException(status_code=401, detail="Invalid API key")
-                
-                # Convert to validation model
-                msg_request = MessageRequest(**body)
-                
-                # Execute honeypot logic
-                # We call the function directly. The 'x_api_key' param takes the string value.
-                return await honeypot_endpoint(msg_request, x_api_key=x_api_key)
-                
-        except Exception as e:
-            # If JSON parsing fails or validation fails, fall through to 405/404 or just return status
-            print(f"Root POST Fallback Error: {e}")
-            pass
-            
-        raise HTTPException(status_code=405, detail="Method Not Allowed. Please POST to /api/honeypot")
-
-    # Default GET response
+@app.get("/")
+async def root_get():
+    """Root GET endpoint"""
     return {
         "message": "Agentic Honeypot API",
         "version": "1.0.0",
         "status": "operational",
-        "endpoints": {
-            "honeypot": "/api/honeypot (POST)",
-            "detailed": "/api/v1/message (POST)",
-            "health": "/health (GET)"
-        }
+        "help": "Send POST requests to /api/honeypot"
     }
+
+
+@app.post("/")
+async def root_post(request: Request):
+    """
+    Root POST endpoint - Fallback for Guvi Tester
+    """
+    try:
+        body = await request.json()
+        
+        # Check signature of a honeypot request
+        if "sessionId" in body:
+            # Validate API key manually
+            x_api_key = request.headers.get("x-api-key")
+            if not x_api_key:
+                x_api_key = request.headers.get("X-API-KEY")
+            
+            if x_api_key != settings.api_key:
+                raise HTTPException(status_code=401, detail="Invalid API key")
+            
+            # Convert to validation model
+            msg_request = MessageRequest(**body)
+            
+            # Execute honeypot logic
+            return await honeypot_endpoint(msg_request, x_api_key=x_api_key)
+            
+    except Exception as e:
+        print(f"Fallback Error: {e}")
+        pass
+        
+    raise HTTPException(status_code=405, detail="Please POST to /api/honeypot")
 
 
 if __name__ == "__main__":
