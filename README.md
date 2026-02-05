@@ -109,6 +109,7 @@ curl -X POST http://localhost:8000/api/honeypot \
 ```
 
 **Response:**
+
 ```json
 {
   "status": "success",
@@ -133,18 +134,21 @@ curl http://localhost:8000/health
 ## 🎭 Personas
 
 ### 1. Ramesh Uncle (Age 67, Retired)
+
 - **Tech Literacy:** Low
 - **Targets:** Authority/urgency scams
 - **Characteristics:** Polite, slow typing, high typos, trusts officials
 - **Vulnerabilities:** Fear of account blocking, pension worries
 
 ### 2. Priya Sharma (Age 32, Software Engineer)
+
 - **Tech Literacy:** Medium-High
 - **Targets:** Time-pressure scams
 - **Characteristics:** Busy, fast typing, minimal punctuation
 - **Vulnerabilities:** Work urgency, fatigue-driven decisions
 
 ### 3. Rahul Verma (Age 21, Engineering Student)
+
 - **Tech Literacy:** Medium
 - **Targets:** Money-making schemes
 - **Characteristics:** Uses slang, emojis, financially desperate
@@ -216,19 +220,20 @@ The project includes configuration for one-click deployment:
 
 ## 📝 Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OPENAI_API_KEY` | OpenAI API key for GPT-4 | Yes |
-| `API_KEY` | Secret key for API authentication | Yes |
-| `GUVI_CALLBACK_URL` | Hackathon callback endpoint | Yes |
-| `PORT` | Server port (default: 8000) | No |
-| `ENVIRONMENT` | dev/production | No |
+| Variable            | Description                       | Required |
+| ------------------- | --------------------------------- | -------- |
+| `OPENAI_API_KEY`    | OpenAI API key for GPT-4          | Yes      |
+| `API_KEY`           | Secret key for API authentication | Yes      |
+| `GUVI_CALLBACK_URL` | Hackathon callback endpoint       | Yes      |
+| `PORT`              | Server port (default: 8000)       | No       |
+| `ENVIRONMENT`       | dev/production                    | No       |
 
 ## 🎯 Usage Examples
 
 ### Example 1: Fake Prize Scam
 
 **Input:**
+
 ```json
 {
   "sessionId": "demo-1",
@@ -237,17 +242,20 @@ The project includes configuration for one-click deployment:
 ```
 
 **Agent Response (as Ramesh):**
+
 ```
 "Really sir? This is very good news! But I am confused, I don't remember entering any contest. Can you plz tell me which company is this?"
 ```
 
 **Extracted Intelligence:**
+
 - UPI ID: `winner@paytm`
 - Keywords: `congratulations`, `won`, `claim`
 
 ### Example 2: Bank Impersonation
 
 **Input:**
+
 ```json
 {
   "sessionId": "demo-2",
@@ -256,11 +264,13 @@ The project includes configuration for one-click deployment:
 ```
 
 **Agent Response (as Ramesh):**
+
 ```
 "Oh no this is very bad sir. My pension comes in this account only. Why it is blocked? I will call this number. Thank you for informing."
 ```
 
 **Extracted Intelligence:**
+
 - Phone: `9876543210`
 - Keywords: `urgent`, `blocked`, `account`
 
@@ -294,6 +304,7 @@ MIT License - See LICENSE file for details
 ## 📞 Support
 
 For issues or questions:
+
 - Create an issue in the repository
 - Contact: [your-email@example.com]
 

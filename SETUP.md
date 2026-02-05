@@ -111,6 +111,7 @@ python main.py
 ## Production Deployment
 
 1. Set environment to production in `.env`:
+
    ```env
    ENVIRONMENT=production
    ```
@@ -129,6 +130,7 @@ python main.py
 ## Quick Test Scenarios
 
 ### Test 1: Fake Prize Scam
+
 ```json
 {
   "sessionId": "test-prize",
@@ -137,6 +139,7 @@ python main.py
 ```
 
 ### Test 2: Bank Impersonation
+
 ```json
 {
   "sessionId": "test-bank",
@@ -145,6 +148,7 @@ python main.py
 ```
 
 ### Test 3: Investment Scam
+
 ```json
 {
   "sessionId": "test-crypto",

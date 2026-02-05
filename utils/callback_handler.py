@@ -10,7 +10,7 @@ from config import settings
 
 async def send_guvi_callback(session: Dict) -> Dict:
     """
-    Send final intelligence report to GUVI endpoint
+    Send final intelligence report to GUVI endpoint - Hackathon Compliant Format
     
     Triggered when:
     - Sufficient intelligence extracted (2+ items)
@@ -31,13 +31,7 @@ async def send_guvi_callback(session: Dict) -> Dict:
                 session["conversation_history"]
             )
         },
-        "agentNotes": generate_agent_notes(session),
-        "engagementMetrics": {
-            "durationSeconds": calculate_duration(session),
-            "intelligenceDensity": calculate_intelligence_density(session),
-            "scamTypes": list(set(session["scam_types"])),
-            "personaUsed": session["persona"]["name"]
-        }
+        "agentNotes": generate_agent_notes(session)
     }
     
     try:

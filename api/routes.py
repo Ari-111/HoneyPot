@@ -5,9 +5,16 @@ API Routes - Main honeypot endpoints
 import time
 import asyncio
 from typing import Dict
+from datetime import datetime
 from fastapi import APIRouter, Header, HTTPException
 
-from models.session import MessageRequest, MessageResponse, DetailedMessageResponse
+from models.session import (
+    MessageRequest, 
+    MessageResponse, 
+    DetailedMessageResponse,
+    EngagementMetrics,
+    ExtractedIntelligence
+)
 from core import (
     scam_detector,
     persona_engine,
@@ -31,10 +38,9 @@ async def honeypot_endpoint(
     x_api_key: str = Header(...)
 ):
     """
-    PRIMARY HACKATHON ENDPOINT
+    PRIMARY HACKATHON ENDPOINT - Compliant with Official Specification
     
-    Receives scam messages and returns agent responses.
-    Returns: {"status": "success", "reply": "agent response"}
+    Receives scam messages in the official format and returns agent responses.
     """
     
     # Validate API key
@@ -42,16 +48,17 @@ async def honeypot_endpoint(
         raise HTTPException(status_code=401, detail="Invalid API key")
     
     session_id = request.sessionId
-    message = request.message
+    message_text = request.message.text
+    message_sender = request.message.sender
     
     # Get or create session
     if session_id not in active_sessions:
-        active_sessions[session_id] = initialize_session(session_id, message)
+        active_sessions[session_id] = initialize_session(session_id, message_text, request)
     
     session = active_sessions[session_id]
     
     # Step 1: Detect scam intent
-    scam_detection = scam_detector.detect_scam_intent(message)
+    scam_detection = scam_detector.detect_scam_intent(message_text)
     
     # Step 2: If scam detected, activate agent
     if scam_detection["is_scam"]:
@@ -63,12 +70,12 @@ async def honeypot_endpoint(
         # Generate agent response
         agent_response = await agent_manager.generate_response(
             session_state=session,
-            user_message=message
+            user_message=message_text
         )
         
         # Step 3: Extract intelligence
         extracted = intelligence_extractor.extract_intelligence(
-            message,
+            message_text,
             session["conversation_history"]
         )
         
@@ -84,7 +91,7 @@ async def honeypot_endpoint(
         # Step 4: Update conversation history
         session["conversation_history"].append({
             "role": "user",
-            "content": message,
+            "content": message_text,
             "timestamp": time.time()
         })
         session["conversation_history"].append({
@@ -95,18 +102,50 @@ async def honeypot_endpoint(
         session["message_count"] += 1
         session["last_message_time"] = time.time()
         
+        # Calculate engagement metrics
+        duration = int(time.time() - session["engagement_start_time"])
+        
+        # Build extracted intelligence response
+        extracted_intel = ExtractedIntelligence(
+            bankAccounts=session["intelligence_extracted"]["bank_accounts"],
+            upiIds=session["intelligence_extracted"]["upi_ids"],
+            phishingLinks=session["intelligence_extracted"]["urls"],
+            phoneNumbers=session["intelligence_extracted"]["phone_numbers"],
+            suspiciousKeywords=list(set(scam_detection.get("red_flags", [])))
+        )
+        
+        # Build engagement metrics
+        engagement = EngagementMetrics(
+            engagementDurationSeconds=duration,
+            totalMessagesExchanged=session["message_count"]
+        )
+        
+        # Generate agent notes
+        agent_notes = f"Detected {', '.join(session['scam_types'])} scam. " \
+                     f"Confidence: {session['scam_confidence']:.0%}. " \
+                     f"Persona: {session['persona']['name']}"
+        
         # Step 5: Check if should trigger callback
         if should_trigger_callback(session):
             session["callback_sent"] = True
             asyncio.create_task(send_guvi_callback(session))
         
-        return MessageResponse(status="success", reply=agent_response)
-    
-    else:
-        # Not a scam - generic response
+        # Return hackathon-compliant response
         return MessageResponse(
             status="success",
-            reply="Thank you for your message."
+            reply=agent_response,
+            scamDetected=True,
+            engagementMetrics=engagement,
+            extractedIntelligence=extracted_intel,
+            agentNotes=agent_notes
+        )
+    
+    else:
+        # Not a scam - simple response without extra fields
+        return MessageResponse(
+            status="success",
+            reply="Thank you for your message.",
+            scamDetected=False
         )
 
 
@@ -127,16 +166,16 @@ async def detailed_message_endpoint(
         raise HTTPException(status_code=401, detail="Invalid API key")
     
     session_id = request.sessionId
-    message = request.message
+    message_text = request.message.text
     
     # Get or create session
     if session_id not in active_sessions:
-        active_sessions[session_id] = initialize_session(session_id, message)
+        active_sessions[session_id] = initialize_session(session_id, message_text, request)
     
     session = active_sessions[session_id]
     
     # Detect scam
-    scam_detection = scam_detector.detect_scam_intent(message)
+    scam_detection = scam_detector.detect_scam_intent(message_text)
     
     # Generate response if scam
     if scam_detection["is_scam"]:
@@ -145,12 +184,12 @@ async def detailed_message_endpoint(
         
         agent_response = await agent_manager.generate_response(
             session_state=session,
-            user_message=message
+            user_message=message_text
         )
         
         # Extract intelligence
         extracted = intelligence_extractor.extract_intelligence(
-            message,
+            message_text,
             session["conversation_history"]
         )
         
@@ -220,7 +259,7 @@ async def health_check():
     }
 
 
-def initialize_session(session_id: str, first_message: str) -> Dict:
+def initialize_session(session_id: str, first_message: str, request: MessageRequest = None) -> Dict:
     """Initialize a new conversation session"""
     
     # Select appropriate persona based on message
@@ -245,7 +284,8 @@ def initialize_session(session_id: str, first_message: str) -> Dict:
         "scam_confirmed": False,
         "scam_confidence": 0.0,
         "conversation_history": [],
-        "callback_sent": False
+        "callback_sent": False,
+        "metadata": request.metadata.dict() if request and request.metadata else {}
     }
     
     return session
