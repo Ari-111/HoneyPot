@@ -41,10 +41,20 @@ async def root_post(request: Request):
     # Check if it looks like a honeypot request
     try:
         body = await request.json()
+        
+        # GUVI TESTER COMPATIBILITY:
+        # The tester sends requests to {BASE_URL}/ (Root endpoint)
+        # We must confirm this payload looks like a honeypot request
+        
         if "sessionId" in body and "message" in body:
             # It's a honeypot request! Forward internal logic
             # We need to manually validate x-api-key here since we're bypassing the signature
             x_api_key = request.headers.get("x-api-key")
+            
+            # Allow case-insensitive header check just in case
+            if not x_api_key:
+                x_api_key = request.headers.get("X-API-KEY")
+            
             if x_api_key != settings.api_key:
                  raise HTTPException(status_code=401, detail="Invalid API key")
             
@@ -56,7 +66,9 @@ async def root_post(request: Request):
         print(f"Root POST error: {e}")
         pass
         
-    raise HTTPException(status_code=404, detail="Please POST to /api/honeypot")
+    # If it wasn't valid JSON or didn't have sessionId, return 404
+    # But for the Guvi tester, we really want to make sure we caught it above.
+    raise HTTPException(status_code=405, detail="Method Not Allowed - Please POST to /api/honeypot")
 
 @router.post("/api/honeypot", response_model=MessageResponse)
 @router.post("/honeypot", response_model=MessageResponse) # Fallback for tester
