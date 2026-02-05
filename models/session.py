@@ -32,7 +32,7 @@ class MessageRequest(BaseModel):
     """Request model for honeypot endpoint - Hackathon Compliant"""
     sessionId: str
     message: MessageContent
-    conversationHistory: List[ConversationMessage] = []
+    conversationHistory: Optional[List[ConversationMessage]] = Field(default_factory=list)
     metadata: Optional[MessageMetadata] = None
 
 
